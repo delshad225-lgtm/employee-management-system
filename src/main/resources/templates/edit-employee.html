@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<title>Add Employee</title>
+<style>
+* {
+	box-sizing: border-box;
+}
+
+body {
+	font-family: Arial, sans-serif;
+	margin: 0;
+	padding: 0;
+	background-color: #f4f6f9;
+	/* Flexbox Centering */
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	min-height: 100vh;
+}
+
+.form-container {
+	width: 100%;
+	max-width: 420px;
+	background-color: #ffffff;
+	padding: 30px;
+	border-radius: 8px;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.form-container h2 {
+	margin-top: 0;
+	margin-bottom: 20px;
+	color: #2c3e50;
+	text-align: center;
+}
+
+.form-group {
+	margin-bottom: 15px;
+}
+
+label {
+	display: block;
+	margin-bottom: 6px;
+	font-weight: bold;
+	color: #34495e;
+	font-size: 14px;
+}
+
+input[type="text"], input[type="email"], input[type="number"] {
+	width: 100%;
+	padding: 10px;
+	border: 1px solid #ccd1d9;
+	border-radius: 4px;
+	font-size: 14px;
+	outline: none;
+}
+
+input[type="text"]:focus, input[type="email"]:focus, input[type="number"]:focus
+	{
+	border-color: #3498db;
+}
+
+.actions {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-top: 20px;
+}
+
+.btn-submit {
+	background-color: #2980b9;
+	color: white;
+	padding: 10px 18px;
+	border: none;
+	border-radius: 4px;
+	cursor: pointer;
+	font-weight: bold;
+}
+
+.btn-submit:hover {
+	background-color: #1f618d;
+}
+
+.btn-cancel {
+	color: #7f8c8d;
+	text-decoration: none;
+	font-size: 14px;
+}
+
+.btn-cancel:hover {
+	text-decoration: underline;
+}
+
+.error-text {
+	color: #e74c3c;
+	font-size: 13px;
+	margin-top: 4px;
+	margin-bottom: 0;
+}
+
+.input-error {
+	border-color: #e74c3c !important;
+}
+</style>
+</head>
+<body>
+
+	<div class="form-container">
+		<h2>Edit Employee</h2>
+
+		<form th:action="@{/employees/{id}(id=${employeeById.id})}"
+			th:object="${employeeById}" method="POST"
+			enctype="multipart/form-data">
+
+			<input type="hidden" th:field="*{id}" />
+
+			<div class="form-group">
+				<label>First Name:</label> <input type="text" th:field="*{fName}"
+					placeholder="e.g. John" required />
+				<p th:if="${#fields.hasErrors('fName')}" th:errors="*{fName}"
+					class="error-text"></p>
+			</div>
+
+			<div class="form-group">
+				<label>Last Name:</label> <input type="text" th:field="*{lName}"
+					placeholder="e.g. Doe" required />
+				<p th:if="${#fields.hasErrors('lName')}" th:errors="*{lName}"
+					class="error-text"></p>
+			</div>
+
+			<div class="form-group">
+				<label>Email:</label> <input type="email" th:field="*{email}"
+					placeholder="e.g. john.doe@example.com" required />
+				<p th:if="${#fields.hasErrors('email')}" th:errors="*{email}"
+					class="error-text"></p>
+			</div>
+
+			<div class="form-group">
+				<label>Department:</label> <select th:field="*{department}"
+					style="width: 100%; padding: 10px; border: 1px solid #ccd1d9; border-radius: 4px; font-size: 14px;">
+					<option value="">-- Select Department --</option>
+					<option th:each="dept : ${departments}" th:value="${dept.id}"
+						th:text="${dept.name}"></option>
+				</select>
+				<p th:if="${#fields.hasErrors('department')}"
+					th:errors="*{department}" class="error-text"></p>
+			</div>
+
+			<div class="form-group">
+				<label>Salary:</label> <input type="number" step="0.01"
+					th:field="*{salary}" placeholder="e.g. 75000.00" required />
+				<p th:if="${#fields.hasErrors('salary')}" th:errors="*{salary}"
+					class="error-text"></p>
+			</div>
+
+			<!-- नई फील्ड: Joining Date -->
+			<div class="form-group">
+				<label>Joining Date:</label> <input type="date"
+					th:field="*{joiningDate}" />
+				<p th:if="${#fields.hasErrors('joiningDate')}"
+					th:errors="*{joiningDate}" class="error-text"></p>
+			</div>
+
+			<!-- नई फील्ड: Status -->
+			<div class="form-group">
+				<label>Status:</label> <select th:field="*{status}">
+					<option th:each="s : ${statuses}" th:value="${s}"
+						th:text="${s.displayName}"></option>
+				</select>
+				<p th:if="${#fields.hasErrors('status')}" th:errors="*{status}"
+					class="error-text"></p>
+			</div>
+
+			<div class="form-group">
+				<label>Profile Photo:</label>
+
+				<!-- FIXED: *{...} सिंटैक्स का इस्तेमाल करें -->
+				<div th:if="*{profileImage != null and !profileImage.isEmpty()}"
+					style="margin-bottom: 8px;">
+					<img th:src="@{'/uploads/' + *{profileImage}}"
+						style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid #ddd;" />
+					<span
+						style="font-size: 12px; color: #7f8c8d; display: block; margin-top: 4px;">
+						Current Photo (Choose a new file below if you want to change it) </span>
+				</div>
+
+				<input type="file" name="imageFile"
+					accept="image/png, image/jpeg, image/jpg" />
+			</div>
+
+			<div class="actions">
+				<button type="submit" class="btn-submit">Update Employee</button>
+				<a th:href="@{/employees}" class="btn-cancel">Cancel</a>
+			</div>
+		</form>
+	</div>
+
+</body>
+</html>

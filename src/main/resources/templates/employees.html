@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+<meta charset="UTF-8">
+<title>Employee Management System</title>
+<style>
+body {
+	font-family: Arial, sans-serif;
+	margin: 30px;
+	background-color: #f8f9fa;
+}
+
+table {
+	width: 100%;
+	border-collapse: collapse;
+	margin-top: 15px;
+	background: white;
+}
+
+th, td {
+	border: 1px solid #ddd;
+	padding: 12px;
+	text-align: left;
+}
+
+th {
+	background-color: #2c3e50;
+	color: white;
+}
+
+th a {
+	color: white;
+	text-decoration: none;
+	display: block;
+	width: 100%;
+}
+
+th a:hover {
+	text-decoration: underline;
+}
+
+tr:nth-child(even) {
+	background-color: #f2f2f2;
+}
+
+.btn {
+	display: inline-block;
+	padding: 8px 14px;
+	color: white;
+	text-decoration: none;
+	border-radius: 4px;
+	font-size: 14px;
+	font-weight: bold;
+	border: none;
+	cursor: pointer;
+}
+
+.btn-add {
+	background-color: #27ae60;
+}
+
+.btn-add:hover {
+	background-color: #219150;
+}
+
+.btn-export {
+	background-color: #17a2b8;
+}
+
+.btn-export:hover {
+	background-color: #138496;
+}
+
+.btn-edit {
+	background-color: #f39c12;
+	margin-right: 5px;
+}
+
+.btn-edit:hover {
+	background-color: #d68910;
+}
+
+.btn-delete {
+	background-color: #e74c3c;
+}
+
+.btn-delete:hover {
+	background-color: #c0392b;
+}
+
+.alert {
+	padding: 12px 18px;
+	border-radius: 4px;
+	margin-bottom: 20px;
+	font-size: 14px;
+	font-weight: 500;
+}
+
+.alert-success {
+	background-color: #d4edda;
+	color: #155724;
+	border: 1px solid #c3e6cb;
+}
+
+.alert-danger {
+	background-color: #f8d7da;
+	color: #721c24;
+	border: 1px solid #f5c6cb;
+}
+
+.badge {
+	display: inline-block;
+	padding: 4px 10px;
+	border-radius: 12px;
+	font-size: 12px;
+	font-weight: bold;
+	text-transform: uppercase;
+}
+
+.badge-active {
+	background-color: #d4edda;
+	color: #155724;
+}
+
+.badge-onleave {
+	background-color: #fff3cd;
+	color: #856404;
+}
+
+.badge-inactive {
+	background-color: #f8d7da;
+	color: #721c24;
+}
+
+.pagination-container {
+	margin-top: 20px;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.page-link {
+	padding: 6px 12px;
+	border: 1px solid #ddd;
+	color: #2c3e50;
+	text-decoration: none;
+	margin: 0 2px;
+	border-radius: 3px;
+	background: white;
+}
+
+.page-link.active {
+	background-color: #2c3e50;
+	color: white;
+	font-weight: bold;
+}
+
+.page-link.disabled {
+	color: #aaa;
+	pointer-events: none;
+	background-color: #eee;
+}
+
+/* Modal Popup Styles */
+.modal {
+	display: none;
+	position: fixed;
+	z-index: 1000;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	background-color: rgba(0, 0, 0, 0.5);
+	justify-content: center;
+	align-items: center;
+}
+
+.modal-content {
+	background-color: #fff;
+	padding: 25px;
+	border-radius: 8px;
+	width: 420px;
+	box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 15px;
+}
+
+.modal-header h3 {
+	margin: 0;
+	color: #2c3e50;
+}
+
+.close-btn {
+	font-size: 24px;
+	font-weight: bold;
+	cursor: pointer;
+	color: #7f8c8d;
+	border: none;
+	background: none;
+}
+
+.modal-form-group {
+	margin-bottom: 12px;
+}
+
+.modal-form-group label {
+	display: block;
+	font-size: 13px;
+	font-weight: bold;
+	margin-bottom: 4px;
+	color: #34495e;
+}
+
+.modal-form-group input, .modal-form-group select {
+	width: 100%;
+	padding: 8px;
+	border: 1px solid #ccc;
+	border-radius: 4px;
+	box-sizing: border-box;
+	font-size: 13px;
+}
+
+.modal-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 10px;
+	margin-top: 20px;
+}
+
+.avatar {
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	object-fit: cover;
+	border: 2px solid #e2e8f0;
+	display: inline-block;
+	vertical-align: middle;
+}
+
+.avatar-placeholder {
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	background-color: #3498db;
+	color: white;
+	display: inline-flex;
+	justify-content: center;
+	align-items: center;
+	font-weight: bold;
+	font-size: 16px;
+	text-transform: uppercase;
+}
+</style>
+</head>
+<body>
+
+	<!-- <h2>Employee Directory</h2> -->
+
+	<!-- Header Bar: Greeting & Logout -->
+	<div
+		style="display: flex; justify-content: space-between; align-items: center; background: white; padding: 12px 20px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); margin-bottom: 20px;">
+		<h2 style="margin: 0; color: #2c3e50;">Employee Directory</h2>
+
+		<div style="display: flex; align-items: center; gap: 15px;">
+			<span style="font-size: 14px; color: #555;"> Logged in as: <strong
+				sec:authentication="name" style="color: #2c3e50;">User</strong> (<span
+				sec:authentication="principal.authorities"
+				style="color: #27ae60; font-weight: bold;">ROLE</span>)
+			</span>
+
+			<!-- Logout Form -->
+			<form th:action="@{/logout}" method="post" style="margin: 0;">
+				<button type="submit" class="btn btn-delete"
+					style="padding: 6px 12px; font-size: 12px;">Logout</button>
+			</form>
+		</div>
+	</div>
+
+	<!-- Flash Alerts -->
+	<div th:if="${successMessage}" class="alert alert-success"
+		th:text="${successMessage}"></div>
+	<div th:if="${dangerMessage}" class="alert alert-danger"
+		th:text="${dangerMessage}"></div>
+
+	<!-- Actions & Search Bar -->
+	<div
+		style="margin-top: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+		<div style="display: flex; gap: 10px;">
+			<a sec:authorize="hasRole('ADMIN')" th:href="@{/employees/new}"
+				class="btn btn-add">+ Add New Employee</a>
+			<!-- Click karne par Modal khulega -->
+			<button type="button" class="btn btn-export"
+				onclick="openExportModal()">📥 Export to CSV</button>
+		</div>
+
+		<form th:action="@{/employees}" method="GET"
+			style="display: flex; gap: 8px;">
+			<input type="hidden" name="sortField" th:value="${sortField}" /> <input
+				type="hidden" name="sortDir" th:value="${sortDir}" /> <input
+				type="text" name="keyword" th:value="${keyword}"
+				placeholder="Search by name or department..."
+				style="padding: 8px 12px; width: 280px; border: 1px solid #ccc; border-radius: 4px;" />
+			<button type="submit" class="btn" style="background-color: #3498db;">Search</button>
+			<a th:href="@{/employees}" class="btn"
+				style="background-color: #95a5a6;">Clear</a>
+		</form>
+	</div>
+
+	<!-- Table -->
+	<table>
+		<thead>
+			<tr>
+				<th><a
+					th:href="@{/employees(pageNo=${currentPage}, sortField='id', sortDir=${reverseSortDir}, keyword=${keyword})}">
+						ID <span th:if="${sortField == 'id'}"
+						th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
+				</a></th>
+				<th>Photo</th>
+				<th><a
+					th:href="@{/employees(pageNo=${currentPage}, sortField='fName', sortDir=${reverseSortDir}, keyword=${keyword})}">
+						First Name <span th:if="${sortField == 'fName'}"
+						th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
+				</a></th>
+				<th><a
+					th:href="@{/employees(pageNo=${currentPage}, sortField='lName', sortDir=${reverseSortDir}, keyword=${keyword})}">
+						Last Name <span th:if="${sortField == 'lName'}"
+						th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
+				</a></th>
+				<th>Email</th>
+				<th>Department</th>
+				<th><a
+					th:href="@{/employees(pageNo=${currentPage}, sortField='salary', sortDir=${reverseSortDir}, keyword=${keyword})}">
+						Salary <span th:if="${sortField == 'salary'}"
+						th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
+				</a></th>
+				<th>Joining Date</th>
+				<th>Status</th>
+				<th>Actions</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr th:each="employee : ${employees}">
+				<td th:text="${employee.id}"></td>
+				<td><img
+					th:if="${employee.profileImage != null and !employee.profileImage.isEmpty()}"
+					th:src="@{'/uploads/' + ${employee.profileImage}}" class="avatar" />
+					<div
+						th:unless="${employee.profileImage != null and !employee.profileImage.isEmpty()}"
+						class="avatar-placeholder"
+						th:text="${#strings.substring(employee.fName, 0, 1)}"></div></td>
+
+				<td th:text="${employee.fName}"></td>
+				<td th:text="${employee.lName}"></td>
+				<td th:text="${employee.email}"></td>
+				<td
+					th:text="${employee.department != null ? employee.department.name : 'N/A'}"></td>
+				<td th:text="${employee.salary}"></td>
+				<td
+					th:text="${employee.joiningDate != null ? #temporals.format(employee.joiningDate, 'dd-MMM-yyyy') : 'N/A'}"></td>
+				<td><span
+					th:if="${employee.status != null and employee.status.name() == 'ACTIVE'}"
+					class="badge badge-active">Active</span> <span
+					th:if="${employee.status != null and employee.status.name() == 'ON_LEAVE'}"
+					class="badge badge-onleave">On Leave</span> <span
+					th:if="${employee.status != null and employee.status.name() == 'INACTIVE'}"
+					class="badge badge-inactive">Inactive</span></td>
+				<td>
+					<!-- Edit सिर्फ ADMIN को दिखेगा --> <a
+					sec:authorize="hasRole('ADMIN')"
+					th:href="@{/employees/edit/{id}(id=${employee.id})}"
+					class="btn btn-edit">Edit</a> <!-- Delete सिर्फ ADMIN को दिखेगा -->
+					<form sec:authorize="hasRole('ADMIN')"
+						th:action="@{/employees/delete/{id}(id=${employee.id})}"
+						method="post" style="display: inline;">
+						<button type="submit" class="btn btn-delete"
+							onclick="return confirm('Are you sure you want to delete this employee?')">
+							Delete</button>
+					</form> <!-- अगर Normal User है तो उसे सिर्फ View Only दिखे --> <span
+					sec:authorize="!hasRole('ADMIN')"
+					style="color: #7f8c8d; font-size: 13px;">View Only</span>
+				</td>
+			</tr>
+			<tr th:if="${#lists.isEmpty(employees)}">
+				<td colspan="10"
+					style="text-align: center; color: #7f8c8d; padding: 20px;">No
+					employees found.</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<!-- Pagination Controls -->
+	<div class="pagination-container" th:if="${totalPages > 0}">
+		<div>
+			Total Employees: <strong th:text="${totalItems}"></strong> | Page <strong
+				th:text="${currentPage}"></strong> of <strong
+				th:text="${totalPages}"></strong>
+		</div>
+		<div>
+			<a th:if="${currentPage > 1}"
+				th:href="@{/employees(pageNo=${currentPage - 1}, sortField=${sortField}, sortDir=${sortDir}, keyword=${keyword})}"
+				class="page-link">Previous</a> <span th:unless="${currentPage > 1}"
+				class="page-link disabled">Previous</span> <span
+				th:each="i: ${#numbers.sequence(1, totalPages)}"> <a
+				th:if="${currentPage != i}"
+				th:href="@{/employees(pageNo=${i}, sortField=${sortField}, sortDir=${sortDir}, keyword=${keyword})}"
+				class="page-link" th:text="${i}"></a> <span
+				th:unless="${currentPage != i}" class="page-link active"
+				th:text="${i}"></span>
+			</span> <a th:if="${currentPage < totalPages}"
+				th:href="@{/employees(pageNo=${currentPage + 1}, sortField=${sortField}, sortDir=${sortDir}, keyword=${keyword})}"
+				class="page-link">Next</a> <span
+				th:unless="${currentPage < totalPages}" class="page-link disabled">Next</span>
+		</div>
+	</div>
+
+	<!-- Export to CSV Filter Modal Popup -->
+	<div id="exportModal" class="modal">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h3>Export Employees to CSV</h3>
+				<button type="button" class="close-btn" onclick="closeExportModal()">&times;</button>
+			</div>
+
+			<form th:action="@{/employees/export/csv}" method="GET"
+				onsubmit="closeExportModal()">
+				<div class="modal-form-group">
+					<label>From Joining Date (Optional):</label> <input type="date"
+						name="startDate" />
+				</div>
+
+				<div class="modal-form-group">
+					<label>To Joining Date (Optional):</label> <input type="date"
+						name="endDate" />
+				</div>
+
+				<div class="modal-form-group">
+					<label>Department:</label> <select name="departmentId">
+						<option value="">-- All Departments --</option>
+						<option th:each="dept : ${departments}" th:value="${dept.id}"
+							th:text="${dept.name}"></option>
+					</select>
+				</div>
+
+				<div class="modal-form-group">
+					<label>Status:</label> <select name="status">
+						<option value="">-- All Statuses --</option>
+						<option th:each="s : ${statuses}" th:value="${s}"
+							th:text="${s.displayName}"></option>
+					</select>
+				</div>
+
+				<div class="modal-actions">
+					<button type="button" class="btn"
+						style="background-color: #95a5a6;" onclick="closeExportModal()">Cancel</button>
+					<button type="submit" class="btn btn-export">Download CSV</button>
+				</div>
+			</form>
+		</div>
+	</div>
+
+	<!-- JavaScript to Handle Modal Open/Close -->
+	<script>
+		function openExportModal() {
+			document.getElementById('exportModal').style.display = 'flex';
+		}
+		function closeExportModal() {
+			document.getElementById('exportModal').style.display = 'none';
+		}
+		// Background click par close karein
+		window.onclick = function(event) {
+			var modal = document.getElementById('exportModal');
+			if (event.target == modal) {
+				modal.style.display = "none";
+			}
+		}
+	</script>
+
+</body>
+</html>

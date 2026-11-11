@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Login - Employee Management System</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .login-card {
+            background: white;
+            padding: 35px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 380px;
+        }
+        .login-card h2 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 25px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: bold;
+            color: #34495e;
+            margin-bottom: 6px;
+        }
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccd1d9;
+            border-radius: 4px;
+            font-size: 14px;
+            outline: none;
+        }
+        input:focus { border-color: #3498db; }
+        .btn-login {
+            width: 100%;
+            padding: 10px;
+            background-color: #2c3e50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .btn-login:hover { background-color: #1a252f; }
+        .alert {
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 13px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .alert-error { background-color: #f8d7da; color: #721c24; }
+        .alert-logout { background-color: #d4edda; color: #155724; }
+        .alert-success { background-color: #d4edda; color: #155724; }
+        .footer-link {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 13px;
+            color: #7f8c8d;
+        }
+        .footer-link a {
+            color: #3498db;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .footer-link a:hover { text-decoration: underline; }
+        .hint {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #7f8c8d;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            border-left: 3px solid #3498db;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-card">
+        <h2>EMS Portal Login</h2>
+
+        <!-- रजिस्ट्रेशन के बाद का मैसेज -->
+        <div th:if="${param.registered}" class="alert alert-success">
+            Registration successful! Please login.
+        </div>
+
+        <!-- गलत पासवर्ड का मैसेज -->
+        <div th:if="${param.error}" class="alert alert-error">
+            Invalid username or password!
+        </div>
+
+        <!-- लॉगआउट का मैसेज -->
+        <div th:if="${param.logout}" class="alert alert-logout">
+            You have been logged out successfully!
+        </div>
+
+        <form th:action="@{/login}" method="post">
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" name="username" placeholder="Enter username" required autofocus />
+            </div>
+
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" name="password" placeholder="Enter password" required />
+            </div>
+
+            <button type="submit" class="btn-login">Login</button>
+        </form>
+
+        <div class="footer-link">
+            Don't have an account? <a th:href="@{/register}">Register here</a>
+        </div>
+
+        <div class="hint">
+            <strong>Default Credentials:</strong><br>
+            • Admin: <code>admin</code> / <code>admin123</code><br>
+            • User: <code>user</code> / <code>user123</code>
+        </div>
+    </div>
+
+</body>
+</html>
