@@ -2,86 +2,97 @@ package com.devportfolio.empmanagement.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.config.Customizer;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import com.devportfolio.empmanagement.security.JwtAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
-    // 1. PasswordEncoder: पासवर्ड को कभी भी प्लेन टेक्स्ट में नहीं रखा जाता, BCrypt से हैश (Encrypt) किया जाता है
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+    }
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // 2. Users बनाना: अभी हम सीखने के लिए 2 इन-मेमोरी टेस्ट यूज़र्स बना रहे हैं
-	/*
-	 * @Bean public UserDetailsService userDetailsService(PasswordEncoder encoder) {
-	 * UserDetails admin = User.builder() .username("admin")
-	 * .password(encoder.encode("admin123")) // Encrypted Password .roles("ADMIN")
-	 * .build();
-	 * 
-	 * UserDetails user = User.builder() .username("user")
-	 * .password(encoder.encode("user123")) .roles("USER") .build();
-	 * 
-	 * return new InMemoryUserDetailsManager(admin, user); }
-	 */
-
-    // 3. Security Filter Chain: यही असली गार्ड है जो तय करता है कौन कहाँ जा सकता है
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-        
-     // 1. REST APIs के लिए CSRF को इग्नोर करें (ताकि Postman से POST/PUT/DELETE चल सके)
-        .csrf(csrf -> csrf.ignoringRequestMatchers("/api/**"))
-        
-            .authorizeHttpRequests(auth -> auth
-            	 // /login और /register को कोई भी बिना लॉगिन के खोल सकता है:
-                 .requestMatchers("/login", "/register", "/css/**", "/js/**", "/uploads/**").permitAll()
-                 
-              // REST API रूल्स:
-                 // GET APIs को USER और ADMIN दोनों एक्सेस कर सकते हैं:
-                 .requestMatchers(HttpMethod.GET, "/api/v1/employees/**").hasAnyRole("ADMIN", "USER")
-                 // POST, PUT, DELETE APIs सिर्फ ADMIN कर सकता है:
-                 .requestMatchers(HttpMethod.POST, "/api/v1/employees/**").hasRole("ADMIN")
-                 .requestMatchers(HttpMethod.PUT, "/api/v1/employees/**").hasRole("ADMIN")
-                 .requestMatchers(HttpMethod.DELETE, "/api/v1/employees/**").hasRole("ADMIN")
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
+    }
 
-                 // Web UI रूल्स:
-                 
-                 
-                // सिर्फ ADMIN कर्मचारी को Add, Edit, और Delete कर सकता है
-                .requestMatchers("/employees/new", "/employees/edit/**", "/employees/delete/**").hasRole("ADMIN")
-                // लिस्ट देखना और CSV डाउनलोड करना ADMIN और USER दोनों कर सकते हैं
-                .requestMatchers("/", "/employees", "/employees/export/**").hasAnyRole("ADMIN", "USER")
-                // बाकी किसी भी रिक्वेस्ट के लिए लॉगिन होना ज़रूरी है
+    // =========================================================================
+    // 🛡️ कतार 1: Mobile Apps & REST APIs (@Order 1 - यह पहले चलेगी)
+    // =========================================================================
+    @Bean
+    @Order(1)
+    public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+            // 1. सिर्फ /api से शुरू होने वाले URLs के लिए:
+            .securityMatcher("/api/**")
+            
+            // 2. CSRF बंद:
+            .csrf(csrf -> csrf.disable())
+
+            // 3. कोई Session / Cookie नहीं (Stateless):
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+            // 4. URL परमिशन:
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/api/v1/auth/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/employees/**").hasAnyRole("ADMIN", "USER")
+                .requestMatchers(HttpMethod.POST, "/api/v1/employees/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/v1/employees/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/v1/employees/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
-            
-         // 3. Postman और Mobile Apps के लिए HTTP Basic Authentication चालू करें:
-            
-            .httpBasic(Customizer.withDefaults()
-            		
+
+            // 5. ⭐ सबसे ज़रूरी: अगर टोकन न हो या गलत हो, तो 401 Unauthorized दो (कभी /login पर मत भेजो!)
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
             )
-         // 4. ब्राउज़र के लिए Form Login
-            
+
+            // 6. हमारा JWT फ़िल्टर जोड़ें:
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
+    }
+
+    // =========================================================================
+    // 🌐 कतार 2: Web Browser & Thymeleaf UI (@Order 2 - बाकी सब इसके लिए)
+    // =========================================================================
+    @Bean
+    @Order(2)
+    public SecurityFilterChain webSecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/login", "/register", "/css/**", "/js/**", "/uploads/**").permitAll()
+                .requestMatchers("/employees/new", "/employees/edit/**", "/employees/delete/**").hasRole("ADMIN")
+                .requestMatchers("/", "/employees", "/employees/export/**").hasAnyRole("ADMIN", "USER")
+                .anyRequest().authenticated()
+            )
             .formLogin(form -> form
-            	.loginPage("/login")
-                .defaultSuccessUrl("/employees", true) // लॉगिन होते ही सीधे /employees पर जाएगा
+                .loginPage("/login")
+                .defaultSuccessUrl("/employees", true)
                 .permitAll()
             )
-            // लॉगआउट कॉन्फ़िगरेशन
-            // लॉगआउट: लॉगआउट होने के बाद डिफ़ॉल्ट /login?logout पर भेजें और सेशन इनवैलिडेट करें
             .logout(logout -> logout
                 .logoutUrl("/logout")
                 .logoutSuccessUrl("/login?logout")
